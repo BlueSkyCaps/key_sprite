@@ -10,6 +10,7 @@ import (
 )
 
 func main() {
+	go RunBroadcastClientMatch()
 	println("input remote ip:")
 	in := bufio.NewReader(os.Stdin)
 	inputIp, _ := in.ReadString('\n')

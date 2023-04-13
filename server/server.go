@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"golang.org/x/sys/windows"
+	"key_sprite/common"
 	"net"
 	"os"
 	"time"
@@ -15,11 +16,16 @@ const (
 )
 
 var userDll = windows.NewLazyDLL("user32.dll")
+var ip string
+var port = "1234"
+var ipAndPort string
 
 func main() {
 	keyProc := userDll.NewProc("keybd_event")
-	port := ":1234" // 监听端口
-	udpAddr, err := net.ResolveUDPAddr("udp", port)
+	ip = common.GetLocalActiveIPs()[0]
+	//ip = ""
+	ipAndPort = ip + ":" + port
+	udpAddr, err := net.ResolveUDPAddr("udp", ipAndPort)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s", err.Error())
 		os.Exit(1)
@@ -34,6 +40,8 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error: %s", err.Error())
 		os.Exit(1)
 	}
+	go RunBroadcastServer()
+
 	for true {
 		handleClient(listener, keyProc)
 	}
@@ -49,6 +57,9 @@ func handleClient(conn *net.UDPConn, proc *windows.LazyProc) {
 		return
 	}
 	msg := string(buf[:n])
+	if ip == addr.IP.String() {
+		return
+	}
 	println("Received ip from:" + addr.IP.String())
 	fmt.Printf("Received msg:%s\n", msg)
 	pressKey(VkSpace, proc)
