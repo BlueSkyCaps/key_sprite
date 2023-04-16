@@ -10,19 +10,12 @@ import (
 var c rune
 
 func RunBroadcastMatchClient() {
-	//localIp := common.GetLocalActiveIPs()[0]
-	//localBroadcastIp := common.ResolveLocalBroadcastIp(localIp)
-	//port := "1234"
-	//localBroadcastIpAndPort := localBroadcastIp + ":" + port
-	// 接收广播消息配对服务端的ip
-	//actNetIps := common.GetNetActiveIPs()
-	//for _, actNetIp := range actNetIps {
-	//	if actNetIp.To4() != nil {
-	//		startIp := actNetIp.String() + ":" + port
-	//		go startListenPacket(startIp)
-	//	}
-	//}
-	//udpAddr, _ := net.ResolveUDPAddr("udp", net.IPv4zero .String()+":1234")
+	/*
+		// 服务端若存在多个网络适配器（如虚拟适配Vmware网卡、多个有效本地连接），
+		// 则会导致无法接收客户端的配对，因为有可能本机IP优先级被其他适配器给“盗走”了。
+		// 反过来也是如此。此问题无解，因为没有独立出一个服务端做中转，且此项目需求也不需要独立出服务端
+		// 因此考虑让服务端增加一个输入框，指定输入客户端的IP是此情景的一个常见的选项。
+	*/
 	startListenPacket(net.IPv4zero.String() + ":1234")
 }
 
