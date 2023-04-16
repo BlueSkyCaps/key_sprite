@@ -1,36 +1,71 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
+	"golang.org/x/sys/windows"
+	"key_sprite/common"
 	"net"
 	"os"
-	"strings"
 	"time"
 )
 
+const (
+	VkSpace          = 0x20
+	KeyEventFKeydown = 0x0000
+	KeyEventFKeyup   = 0x0002
+)
+
+var userDll = windows.NewLazyDLL("user32.dll")
+var ip string
+var port = "1234"
+var ipAndPort string
+
 func main() {
-	go RunBroadcastClientMatch()
-	println("input remote ip:")
-	in := bufio.NewReader(os.Stdin)
-	inputIp, _ := in.ReadString('\n')
-	// ReadString读\n结束并接收\n，此处去除最后的\n,windows是\r\n
-	inputIp = strings.TrimSuffix(inputIp, "\n")
-	inputIp = strings.TrimSuffix(inputIp, "\r")
-	conn, err := net.Dial("udp", inputIp) // 目标IP地址和端口号
+	go RunClientBroadcast()
+	keyProc := userDll.NewProc("keybd_event")
+	ip = common.GetLocalActiveIPs()[0]
+	//ip = ""
+	ipAndPort = ip + ":" + port
+	udpAddr, err := net.ResolveUDPAddr("udp", ipAndPort)
 	if err != nil {
-		fmt.Println("error:", err)
+		fmt.Fprintf(os.Stderr, "Error: %s", err.Error())
+		os.Exit(1)
+	}
+	listener, err := net.ListenUDP("udp", udpAddr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %s", err.Error())
+		os.Exit(1)
+	}
+	err = listener.SetDeadline(time.Time{})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %s", err.Error())
+		os.Exit(1)
+	}
+
+	for true {
+		handleClient(listener, keyProc)
+	}
+}
+
+func handleClient(conn *net.UDPConn, proc *windows.LazyProc) {
+	buf := make([]byte, 1024)
+	// 等待远端的发送，然后读取，此条代码阻塞并且永不超时
+	n, addr, err := conn.ReadFromUDP(buf)
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %s", err.Error())
 		return
 	}
-	defer conn.Close()
-
-	time.Sleep(time.Second * 5)
-	msg := []byte("space from sender!")
-	_, err = conn.Write(msg)
-	if err != nil {
-		fmt.Println("error:", err)
+	msg := string(buf[:n])
+	if ipAndPort == addr.IP.String() {
 		return
 	}
+	println("Received ip from:" + addr.IP.String())
+	fmt.Printf("Received msg:%s\n", msg)
+	pressKey(VkSpace, proc)
+}
 
-	fmt.Println("Message sent.")
+func pressKey(keyCode int, proc *windows.LazyProc) {
+	proc.Call(uintptr(keyCode), 0, KeyEventFKeydown, 0)
+	proc.Call(uintptr(keyCode), 0, KeyEventFKeyup, 0)
 }

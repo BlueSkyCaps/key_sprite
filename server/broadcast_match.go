@@ -9,7 +9,7 @@ import (
 
 var c rune
 
-func RunBroadcastClientMatch() {
+func RunBroadcastMatchClient() {
 	//localIp := common.GetLocalActiveIPs()[0]
 	//localBroadcastIp := common.ResolveLocalBroadcastIp(localIp)
 	//port := "1234"
@@ -23,15 +23,14 @@ func RunBroadcastClientMatch() {
 	//	}
 	//}
 	//udpAddr, _ := net.ResolveUDPAddr("udp", net.IPv4zero .String()+":1234")
-	go startListenPacket(net.IPv4zero.String() + ":1234")
-
+	startListenPacket(net.IPv4zero.String() + ":1234")
 }
 
 func startListenPacket(ip string) {
 
 	conn, err := net.ListenPacket("udp", ip)
 	if err != nil {
-		println("致命错误：net.ListenPacket\n客户端接收服务端配对信息监听失败" + err.Error())
+		println("致命错误：net.ListenPacket\n服务端接收客户端配对信息监听失败" + err.Error())
 		fmt.Scanln(&c)
 		panic("")
 	}
@@ -41,7 +40,7 @@ func startListenPacket(ip string) {
 	for {
 		err = conn.SetReadDeadline(time.Now().Add(6 * time.Second))
 		if err != nil {
-			println("致命错误：SetReadDeadline\n客户端接收服务端配对信息的超时设置失败:" + err.Error())
+			println("致命错误：SetReadDeadline\n服务端接收客户端配对信息的超时设置失败:" + err.Error())
 			fmt.Scanln(&c)
 			panic("")
 		}
@@ -53,7 +52,7 @@ func startListenPacket(ip string) {
 				println("超时，重新等待下一轮广播消息")
 				continue
 			}
-			println("致命错误：conn.ReadFrom\n客户端接收服务端配对信息读取失败:" + err.Error())
+			println("致命错误：conn.ReadFrom\n服务端接收客户端配对信息读取失败:" + err.Error())
 			fmt.Scanln(&c)
 			panic("")
 		}
@@ -62,7 +61,7 @@ func startListenPacket(ip string) {
 			continue
 		}
 		name := strings.Split(ms, ",")[1]
-		fmt.Printf("Received server broadcast message from ip:%s\n"+
+		fmt.Printf("Received client broadcast message from ip:%s\n"+
 			"name:%s\nmsg:%s\n", addr.String(), name, ms)
 	}
 }
